@@ -145,12 +145,78 @@
 }
 
 .chat-composer {
+  position: relative;
   display: flex;
   align-items: flex-end;
   gap: 8px;
   padding: 8px 12px;
   border-top: 1px solid var(--color-divider);
   background: var(--color-surface);
+}
+
+.composer-btn.active {
+  background: var(--color-surface2);
+}
+
+.composer-spinner {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.panel-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+}
+
+.attach-menu {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 12px;
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+  background: var(--color-elev);
+  border: 1px solid var(--color-divider);
+  border-radius: 14px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  padding: 6px;
+  z-index: 500;
+}
+
+.attach-menu button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  color: var(--color-text);
+  font-size: 14.5px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease;
+}
+
+.attach-menu button:hover {
+  background: var(--color-surface2);
+}
+
+.attach-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 18px;
+  background: var(--color-surface2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .composer-btn {

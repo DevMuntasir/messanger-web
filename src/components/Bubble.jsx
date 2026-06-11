@@ -1,6 +1,10 @@
 import React from 'react';
 import './Bubble.css';
 
+// RedGifs (and most modern GIF sources) serve silent mp4 loops,
+// which <img> can't play — render those in a muted looping <video>.
+const isVideoUri = (uri) => !!uri && /\.(mp4|webm|mov|m3u8)(\?|$)/i.test(uri);
+
 export default function Bubble({ m, cont, onLongPress }) {
   const isMine = m.from === 'me';
 
@@ -33,7 +37,9 @@ export default function Bubble({ m, cont, onLongPress }) {
         e.currentTarget.addEventListener('mouseleave', cleanup, { once: true });
       }}
     >
-      {m.kind === 'image' ? (
+      {m.kind === 'image' && isVideoUri(m.uri) ? (
+        <video src={m.uri} className="bubble-gif" autoPlay loop muted playsInline />
+      ) : m.kind === 'image' ? (
         <img src={m.uri} alt="message" className="bubble-image" />
       ) : (
         <p className="bubble-text">{m.text}</p>

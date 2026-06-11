@@ -45,6 +45,14 @@
   object-fit: cover;
 }
 
+.bubble-gif {
+  width: 218px;
+  height: 218px;
+  border-radius: 12px;
+  object-fit: cover;
+  background: rgba(0, 0, 0, 0.15);
+}
+
 .bubble-time {
   font-size: 11px;
   opacity: 0.7;

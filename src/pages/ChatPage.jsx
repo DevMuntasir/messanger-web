@@ -3,6 +3,8 @@ import Avatar from '../components/Avatar';
 import Icon from '../components/Icon';
 import Bubble from '../components/Bubble';
 import TypingDots from '../components/TypingDots';
+import EmojiPicker from '../components/EmojiPicker';
+import GifPicker from '../components/GifPicker';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import { useMessages } from '../hooks/useMessages';
@@ -22,9 +24,14 @@ export default function ChatPage({ convId, onBack }) {
   const [seen, setSeen] = useState(false);
   const [reactAnchor, setReactAnchor] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [panel, setPanel] = useState(null);        // null | 'emoji' | 'gif' | 'attach'
+  const [quickOpen, setQuickOpen] = useState(true); // left quick-action icons expanded
 
   const scrollRef = useRef(null);
   const typingTimer = useRef(null);
+  const inputRef = useRef(null);
+  const fileRef = useRef(null);
+  const cameraRef = useRef(null);
 
   useEffect(() => {
     apiClient.get(`/api/conversations/${convId}`)
@@ -70,16 +77,69 @@ export default function ChatPage({ convId, onBack }) {
 
   const handleTextChange = (val) => {
     setText(val);
+    // Messenger collapses the quick actions to a chevron while typing.
+    if (val && quickOpen) setQuickOpen(false);
+    if (!val && !quickOpen) setQuickOpen(true);
     if (!socket || !convId) return;
     socket.emit('typing_start', { conversationId: convId });
     clearTimeout(typingTimer.current);
     typingTimer.current = setTimeout(emitTypingStop, 2000);
   };
 
+  const togglePanel = (name) => {
+    setPanel(prev => (prev === name ? null : name));
+  };
+
+  const insertEmoji = (emoji) => {
+    const el = inputRef.current;
+    const start = el?.selectionStart ?? text.length;
+    const end = el?.selectionEnd ?? text.length;
+    setText(text.slice(0, start) + emoji + text.slice(end));
+    requestAnimationFrame(() => {
+      if (!el) return;
+      el.focus();
+      const pos = start + emoji.length;
+      el.setSelectionRange(pos, pos);
+    });
+  };
+
+  const sendGif = (url) => {
+    if (!socket || !url) return;
+    const optimisticId = `opt_${Date.now()}`;
+    appendOptimistic({ id: optimisticId, from: 'me', kind: 'image', uri: url, time: 'now', pending: true });
+    socket.emit('send_message', { conversationId: convId, kind: 'image', imageUrl: url });
+    setPanel(null);
+    scrollToBottom();
+  };
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !socket) return;
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await apiClient.post('/api/upload/image', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      const url = res.data.url;
+      const optimisticId = `opt_${Date.now()}`;
+      appendOptimistic({ id: optimisticId, from: 'me', kind: 'image', uri: url, time: 'now', pending: true });
+      socket.emit('send_message', { conversationId: convId, kind: 'image', imageUrl: url });
+      scrollToBottom();
+    } catch (err) {
+      alert('Upload failed: ' + err.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const send = () => {
     const body = text.trim();
     if (!body || !socket) return;
     setText('');
+    setQuickOpen(true);
     emitTypingStop();
     const optimisticId = `opt_${Date.now()}`;
     appendOptimistic({ id: optimisticId, from: 'me', kind: 'text', text: body, time: 'now', pending: true });
@@ -181,24 +241,36 @@ export default function ChatPage({ convId, onBack }) {
 
       {/* Composer */}
       <div className="chat-composer">
-        <button className="composer-btn" title="Add attachment">
-          <Icon name="plus" size={24} />
-        </button>
-        {!text && (
+        {/* hidden file inputs */}
+        <input ref={fileRef} type="file" accept="image/*" hidden onChange={handleFileChange} />
+        <input ref={cameraRef} type="file" accept="image/*" capture="environment" hidden onChange={handleFileChange} />
+
+        {quickOpen ? (
           <>
-            <button className="composer-btn" title="Camera" disabled={uploading}>
+            <button className="composer-btn" title="Add attachment" onClick={() => togglePanel('attach')}>
+              <Icon name="plus" size={24} />
+            </button>
+            <button className="composer-btn" title="Camera" disabled={uploading}
+              onClick={() => cameraRef.current?.click()}>
               <Icon name="camera" size={22} gradient />
             </button>
-            <button className="composer-btn" title="Image" disabled={uploading}>
+            <button className="composer-btn" title="Image" disabled={uploading}
+              onClick={() => fileRef.current?.click()}>
               <Icon name="image" size={22} gradient />
             </button>
-            <button className="composer-btn" title="Mic">
-              <Icon name="mic" size={22} gradient />
+            <button className="composer-btn" title="GIF" onClick={() => togglePanel('gif')}>
+              <Icon name="gif" size={24} />
             </button>
           </>
+        ) : (
+          <button className="composer-btn" title="More actions" onClick={() => setQuickOpen(true)}>
+            <Icon name="chevron" size={24} />
+          </button>
         )}
+
         <div className="comp-field">
           <textarea
+            ref={inputRef}
             value={text}
             onChange={(e) => handleTextChange(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -207,11 +279,14 @@ export default function ChatPage({ convId, onBack }) {
             rows="1"
             style={{ resize: 'none' }}
           />
-          <button className="composer-btn" title="Emoji">
+          <button className={`composer-btn ${panel === 'emoji' ? 'active' : ''}`} title="Emoji"
+            onClick={() => togglePanel('emoji')}>
             <Icon name="emoji" size={22} />
           </button>
         </div>
-        {text.trim() ? (
+        {uploading ? (
+          <div className="composer-spinner" title="Uploading…">⏳</div>
+        ) : text.trim() ? (
           <button className="send-btn" onClick={send}>
             <Icon name="send" size={20} color="white" />
           </button>
@@ -219,6 +294,33 @@ export default function ChatPage({ convId, onBack }) {
           <button className="like-btn" onClick={sendLike}>
             👍
           </button>
+        )}
+
+        {/* popover panels */}
+        {panel === 'emoji' && (
+          <EmojiPicker onPick={insertEmoji} onClose={() => setPanel(null)} />
+        )}
+        {panel === 'gif' && (
+          <GifPicker onSend={sendGif} onClose={() => setPanel(null)} />
+        )}
+        {panel === 'attach' && (
+          <>
+            <div className="panel-overlay" onClick={() => setPanel(null)} />
+            <div className="attach-menu">
+            <button onClick={() => { setPanel(null); cameraRef.current?.click(); }}>
+              <span className="attach-icon"><Icon name="camera" size={20} gradient /></span>
+              Camera
+            </button>
+            <button onClick={() => { setPanel(null); fileRef.current?.click(); }}>
+              <span className="attach-icon"><Icon name="image" size={20} gradient /></span>
+              Photo library
+            </button>
+            <button onClick={() => setPanel('gif')}>
+              <span className="attach-icon"><Icon name="gif" size={20} /></span>
+              GIF
+            </button>
+            </div>
+          </>
         )}
       </div>
 

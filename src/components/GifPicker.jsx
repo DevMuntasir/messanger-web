@@ -101,7 +101,7 @@ export default function GifPicker({ onSend, onClose }) {
             if (!preview || !sendUrl) return null;
             return (
               <button key={item.id} className="gif-item" onClick={() => onSend(sendUrl)}>
-                <img src={preview} alt={item.description || 'gif'} loading="lazy" />
+                <img src={preview} alt={item.description || 'gif'} loading="lazy" referrerPolicy="no-referrer" />
               </button>
             );
           })

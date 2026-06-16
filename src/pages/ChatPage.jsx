@@ -26,6 +26,7 @@ export default function ChatPage({ convId, onBack }) {
   const [uploading, setUploading] = useState(false);
   const [panel, setPanel] = useState(null);        // null | 'emoji' | 'gif' | 'attach'
   const [quickOpen, setQuickOpen] = useState(true); // left quick-action icons expanded
+  const [replyTo, setReplyTo] = useState(null);    // message being replied to
 
   const scrollRef = useRef(null);
   const typingTimer = useRef(null);
@@ -142,10 +143,18 @@ export default function ChatPage({ convId, onBack }) {
     setQuickOpen(true);
     emitTypingStop();
     const optimisticId = `opt_${Date.now()}`;
-    appendOptimistic({ id: optimisticId, from: 'me', kind: 'text', text: body, time: 'now', pending: true });
+    const msgPayload = { id: optimisticId, from: 'me', kind: 'text', text: body, time: 'now', pending: true };
+    if (replyTo) msgPayload.replyTo = replyTo.id;
+    appendOptimistic(msgPayload);
     setSeen(false);
-    socket.emit('send_message', { conversationId: convId, kind: 'text', text: body });
+    socket.emit('send_message', { conversationId: convId, kind: 'text', text: body, replyTo: replyTo?.id });
+    setReplyTo(null);
     scrollToBottom();
+  };
+
+  const handleReply = (msg) => {
+    setReplyTo(msg);
+    inputRef.current?.focus();
   };
 
   const handleKeyDown = (e) => {
@@ -216,6 +225,7 @@ export default function ChatPage({ convId, onBack }) {
             next={msgs[i + 1]}
             curPerson={p}
             onReact={openReact}
+            onReply={handleReply}
           />
         ))}
         {typing && (
@@ -241,11 +251,25 @@ export default function ChatPage({ convId, onBack }) {
 
       {/* Composer */}
       <div className="chat-composer">
-        {/* hidden file inputs */}
-        <input ref={fileRef} type="file" accept="image/*" hidden onChange={handleFileChange} />
-        <input ref={cameraRef} type="file" accept="image/*" capture="environment" hidden onChange={handleFileChange} />
+        {replyTo && (
+          <div className="quote-box">
+            <button className="quote-dismiss" onClick={() => setReplyTo(null)}>✕</button>
+            <div className="quote-content">
+              <div className="quote-label">
+                Replying to {replyTo.from === 'me' ? 'yourself' : replyTo.who?.name || 'them'}
+              </div>
+              <div className="quote-text">
+                {replyTo.kind === 'text' ? replyTo.text : replyTo.kind === 'image' ? '📷 Image' : '🎙️ Voice'}
+              </div>
+            </div>
+          </div>
+        )}
+        <div className="composer-content">
+          {/* hidden file inputs */}
+          <input ref={fileRef} type="file" accept="image/*" hidden onChange={handleFileChange} />
+          <input ref={cameraRef} type="file" accept="image/*" capture="environment" hidden onChange={handleFileChange} />
 
-        {quickOpen ? (
+          {quickOpen ? (
           <>
             <button className="composer-btn" title="Add attachment" onClick={() => togglePanel('attach')}>
               <Icon name="plus" size={24} />
@@ -294,7 +318,8 @@ export default function ChatPage({ convId, onBack }) {
           <button className="like-btn" onClick={sendLike}>
             👍
           </button>
-        )}
+          )}
+        </div>
 
         {/* popover panels */}
         {panel === 'emoji' && (
@@ -338,11 +363,15 @@ export default function ChatPage({ convId, onBack }) {
   );
 }
 
-function MsgRow({ m, prev, next, curPerson, onReact }) {
+function MsgRow({ m, prev, next, curPerson, onReact, onReply }) {
   const mine = m.from === 'me';
   const cont = prev && prev.from === m.from && (m.who?.id === prev.who?.id);
   const groupStart = !prev || prev.from !== m.from || (m.who?.id !== prev.who?.id);
   const showAvatar = !mine && (!next || next.from !== m.from || next.who?.id !== m.who?.id);
+
+  const handleReply = () => {
+    onReply?.(m);
+  };
 
   return (
     <div className={`msg-row ${mine ? 'msg-out' : 'msg-in'} ${groupStart ? 'group-start' : ''}`}>
@@ -356,11 +385,15 @@ function MsgRow({ m, prev, next, curPerson, onReact }) {
           m={m}
           cont={cont}
           onLongPress={(e) => onReact(m.id, e.nativeEvent)}
+          onReply={handleReply}
         />
         {m.react && (
           <div className={`react-chip ${mine ? 'react-mine' : 'react-theirs'}`}>
             {m.react}
           </div>
+        )}
+        {m.pending && mine && (
+          <div className="msg-status">Sending…</div>
         )}
       </div>
     </div>
@@ -380,9 +413,9 @@ function ReactionPicker({ reactions, x, y, onReact, onClose }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [onClose]);
 
-  const popWidth = 264;
+  const popWidth = 300;
   const popLeft = Math.max(10, Math.min(x - popWidth / 2, window.innerWidth - popWidth - 10));
-  const popTop = Math.max(50, y - 70);
+  const popTop = Math.max(50, Math.min(y - 80, window.innerHeight - 100));
 
   return (
     <>

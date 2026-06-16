@@ -5,7 +5,7 @@ import './Bubble.css';
 // which <img> can't play — render those in a muted looping <video>.
 const isVideoUri = (uri) => !!uri && /\.(mp4|webm|mov|m3u8)(\?|$)/i.test(uri);
 
-export default function Bubble({ m, cont, onLongPress }) {
+export default function Bubble({ m, cont, onLongPress, onReply }) {
   const isMine = m.from === 'me';
 
   const handleContextMenu = (e) => {

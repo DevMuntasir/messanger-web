@@ -144,14 +144,76 @@
   left: 32px;
 }
 
+.msg-status {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--color-text3);
+  margin-top: 4px;
+  margin-right: 4px;
+}
+
 .chat-composer {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--color-divider);
+  background: var(--color-surface);
+}
+
+.quote-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-left: 3px solid #9b5cff;
+  background: var(--color-surface2);
+}
+
+.quote-dismiss {
+  width: 24px;
+  height: 24px;
+  border-radius: 12px;
+  background: transparent;
+  border: none;
+  color: var(--color-text3);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+  transition: background 0.2s ease;
+}
+
+.quote-dismiss:hover {
+  background: var(--color-surface);
+}
+
+.quote-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.quote-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text3);
+  margin-bottom: 2px;
+}
+
+.quote-text {
+  font-size: 13px;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.composer-content {
   display: flex;
   align-items: flex-end;
   gap: 8px;
   padding: 8px 12px;
-  border-top: 1px solid var(--color-divider);
-  background: var(--color-surface);
 }
 
 .composer-btn.active {
@@ -320,31 +382,31 @@
   position: fixed;
   display: flex;
   flex-direction: row;
-  gap: 4px;
+  gap: 8px;
   background: var(--color-elev);
   border: 1px solid var(--color-divider);
-  border-radius: 26px;
-  padding: 10px;
+  border-radius: 32px;
+  padding: 14px;
   z-index: 1000;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
 }
 
 .react-btn {
-  width: 38px;
-  height: 38px;
-  border-radius: 19px;
+  width: 44px;
+  height: 44px;
+  border-radius: 22px;
   background: transparent;
   border: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 26px;
+  font-size: 28px;
   cursor: pointer;
   transition: transform 0.2s ease;
 }
 
 .react-btn:hover {
-  transform: scale(1.3) translateY(-3px);
+  transform: scale(1.35) translateY(-4px);
 }
 
 @media (max-width: 768px) {

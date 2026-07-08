@@ -5,6 +5,7 @@ import Bubble from '../components/Bubble';
 import TypingDots from '../components/TypingDots';
 import EmojiPicker from '../components/EmojiPicker';
 import GifPicker from '../components/GifPicker';
+import StoriesSection from '../components/StoriesSection';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import { useMessages } from '../hooks/useMessages';
@@ -206,6 +207,9 @@ export default function ChatPage({ convId, onBack }) {
 
   return (
     <div className="chat-page">
+      {/* Stories Section */}
+      <StoriesSection friendsList={conversation?.person ? [conversation.person] : []} />
+
       {/* Header */}
       <div className="chat-header">
         <button className="back-btn" onClick={onBack}>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { StoryProvider } from './context/StoryContext';
 import LoginPage from './pages/LoginPage';
 import SetupProfilePage from './pages/SetupProfilePage';
 import InboxPage from './pages/InboxPage';
@@ -80,9 +81,11 @@ export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <SocketProvider>
-          <AppContent />
-        </SocketProvider>
+        <StoryProvider>
+          <SocketProvider>
+            <AppContent />
+          </SocketProvider>
+        </StoryProvider>
       </AuthProvider>
     </ThemeProvider>
   );

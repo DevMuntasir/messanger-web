@@ -37,13 +37,20 @@ export default function StoryUploadModal({ onClose, onSuccess }) {
     try {
       const formData = new FormData();
       formData.append('file', selectedFile);
+      console.log('Uploading image...');
       const res = await apiClient.post('/api/upload/image', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
+      console.log('Image uploaded:', res.data);
+
+      console.log('Creating story...');
       await uploadStory(res.data.url, caption);
+      console.log('Story uploaded successfully');
+
       onSuccess?.();
       onClose?.();
     } catch (err) {
+      console.error('Publish error:', err);
       alert('Failed to publish story: ' + err.message);
     } finally {
       setUploading(false);

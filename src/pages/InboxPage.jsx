@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Avatar from '../components/Avatar';
 import Icon from '../components/Icon';
+import StoriesSection from '../components/StoriesSection';
 import { useAuth } from '../context/AuthContext';
 import { useConversations } from '../hooks/useConversations';
 import apiClient from '../services/apiClient';
@@ -80,6 +81,11 @@ export default function InboxPage({ onSelectConversation }) {
         </div>
       </div>
 
+      {/* Stories Section */}
+      {activeTab === 'conversations' && (
+        <StoriesSection friendsList={conversations.map(c => ({ ...c.person, id: c.person?.id || c.id }))} />
+      )}
+
       {/* Tabs */}
       <div className="inbox-tabs">
         <button
@@ -119,12 +125,6 @@ export default function InboxPage({ onSelectConversation }) {
           {!searchQuery && online.length > 0 && (
             <div className="active-section">
               <div className="active-row">
-                <div className="active-cell">
-                  <div className="story-circle">
-                    <span className="story-initials">{user?.initials || 'YO'}</span>
-                  </div>
-                  <span className="active-name">Your story</span>
-                </div>
                 {online.map((c) => (
                   <div
                     key={c.id}

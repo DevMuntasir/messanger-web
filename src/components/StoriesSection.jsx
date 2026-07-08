@@ -38,51 +38,67 @@ export default function StoriesSection({ friendsList }) {
     groupedByUser[key].push(story);
   });
 
-  const storyUsers = Object.entries(groupedByUser).map(([userId, stories]) => ({
-    userId,
-    stories: stories.sort((a, b) => b.createdAt - a.createdAt),
-    ownerName: stories[0].ownerName,
-    isOwn: stories[0].isOwn,
-    avatar: stories[0].isOwn
-      ? user?.avatar || user?.photoURL
-      : friendsList?.find(f => f.id === userId || f.userId === userId)?.avatar ||
-        friendsList?.find(f => f.id === userId || f.userId === userId)?.photoURL,
-  }));
+  const storyUsers = Object.entries(groupedByUser).map(([userId, stories]) => {
+    const friend = friendsList?.find(f => f.id === userId || f.userId === userId);
+    return {
+      userId,
+      stories: stories.sort((a, b) => b.createdAt - a.createdAt),
+      ownerName: stories[0].ownerName,
+      isOwn: stories[0].isOwn,
+      avatar: stories[0].isOwn
+        ? user?.avatar || user?.photoURL || user?.profile?.avatar
+        : friend?.avatar || friend?.photoURL || friend?.profile?.avatar,
+    };
+  });
 
-  if (storyUsers.length === 0) return null;
+  const hasStories = storyUsers.length > 0;
 
   return (
     <>
       <div className="stories-section">
         <div className="stories-list">
-          {storyUsers.map(({ userId, stories, ownerName, isOwn, avatar }) => (
-            <div
-              key={userId}
-              className="story-user-card"
-              onClick={() => setViewingStory({ userId, stories, ownerName })}
-            >
-              <div className="story-avatar-wrapper">
-                <img
-                  src={avatar || `https://i.pravatar.cc/48?u=${userId}`}
-                  alt={ownerName}
-                  className="story-avatar"
-                />
-                {isOwn && (
-                  <button
-                    className="story-add-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowUploadModal(true);
-                    }}
-                    title="Add story"
-                  >
-                    +
-                  </button>
+          {/* Add Story button */}
+          <div
+            className="story-user-card add-story-card"
+            onClick={() => setShowUploadModal(true)}
+          >
+            <div className="story-avatar-wrapper add-story-wrapper">
+              <div className="story-avatar add-story-avatar">
+                {user?.avatar || user?.photoURL || user?.profile?.avatar ? (
+                  <img
+                    src={user?.avatar || user?.photoURL || user?.profile?.avatar}
+                    alt={user?.name || 'Add story'}
+                  />
+                ) : (
+                  <div className="avatar-initials">{user?.initials || '+'}</div>
                 )}
-                <div className="story-unread-indicator" />
               </div>
-              <p className="story-username">{ownerName}</p>
+              <button className="story-add-btn add-story-btn" title="Add story">
+                +
+              </button>
             </div>
+            <p className="story-username">Add story</p>
+          </div>
+
+          {/* Friends' stories */}
+          {storyUsers.map(({ userId, stories, ownerName, isOwn, avatar }) => (
+            !isOwn && (
+              <div
+                key={userId}
+                className="story-user-card"
+                onClick={() => setViewingStory({ userId, stories, ownerName })}
+              >
+                <div className="story-avatar-wrapper">
+                  <img
+                    src={avatar || `https://i.pravatar.cc/48?u=${userId}`}
+                    alt={ownerName}
+                    className="story-avatar"
+                  />
+                  <div className="story-unread-indicator" />
+                </div>
+                <p className="story-username">{ownerName}</p>
+              </div>
+            )
           ))}
         </div>
       </div>

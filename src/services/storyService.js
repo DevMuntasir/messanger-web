@@ -1,54 +1,30 @@
-import { db } from '../config/firebase';
-import {
-  collection,
-  addDoc,
-  query,
-  where,
-  orderBy,
-  getDocs,
-  deleteDoc,
-  doc,
-  Timestamp,
-  writeBatch,
-} from 'firebase/firestore';
-
-const STORY_EXPIRY_HOURS = 24;
+import apiClient from './apiClient';
 
 export async function createStory(userId, imageUrl, caption) {
-  const storiesRef = collection(db, 'stories');
-  const expiresAt = new Date(Date.now() + STORY_EXPIRY_HOURS * 60 * 60 * 1000);
+  try {
+    console.log('Creating story via API:', { userId, imageUrl, caption });
 
-  const story = await addDoc(storiesRef, {
-    userId,
-    imageUrl,
-    caption: caption || '',
-    createdAt: Timestamp.now(),
-    expiresAt: Timestamp.fromDate(expiresAt),
-  });
+    const res = await apiClient.post('/api/stories', {
+      imageUrl,
+      caption: caption || '',
+    });
 
-  return story;
+    console.log('Story created:', res.data);
+    return res.data;
+  } catch (err) {
+    console.error('Error in createStory:', err);
+    throw err;
+  }
 }
 
 export async function getUserStories(userId) {
   try {
-    const storiesRef = collection(db, 'stories');
-    const now = Timestamp.now();
+    console.log('Fetching stories for userId:', userId);
 
-    const q = query(
-      storiesRef,
-      where('userId', '==', userId),
-      where('expiresAt', '>', now),
-      orderBy('expiresAt', 'desc')
-    );
+    const res = await apiClient.get(`/api/stories/user/${userId}`);
+    const stories = res.data || [];
 
-    const snap = await getDocs(q);
-    const stories = snap.docs.map(d => ({
-      id: d.id,
-      ...d.data(),
-      createdAt: d.data().createdAt?.toDate?.(),
-      expiresAt: d.data().expiresAt?.toDate?.(),
-    }));
-
+    console.log('Stories fetched:', stories);
     return stories;
   } catch (err) {
     console.error('Error fetching user stories:', err);
@@ -60,31 +36,11 @@ export async function getStoriesFromUsers(userIds) {
   if (!userIds || userIds.length === 0) return [];
 
   try {
-    const allStories = [];
-    const now = Timestamp.now();
-    const storiesRef = collection(db, 'stories');
+    const res = await apiClient.post('/api/stories/users', { userIds });
+    const stories = res.data || [];
 
-    for (const userId of userIds) {
-      const q = query(
-        storiesRef,
-        where('userId', '==', userId),
-        where('expiresAt', '>', now),
-        orderBy('expiresAt', 'desc')
-      );
-
-      const snap = await getDocs(q);
-      snap.docs.forEach(d => {
-        allStories.push({
-          id: d.id,
-          userId,
-          ...d.data(),
-          createdAt: d.data().createdAt?.toDate?.(),
-          expiresAt: d.data().expiresAt?.toDate?.(),
-        });
-      });
-    }
-
-    return allStories.sort((a, b) => b.createdAt - a.createdAt);
+    console.log('Stories from users fetched:', stories);
+    return stories;
   } catch (err) {
     console.error('Error fetching stories from users:', err);
     return [];
@@ -92,29 +48,18 @@ export async function getStoriesFromUsers(userIds) {
 }
 
 export async function deleteStory(userId, storyId) {
-  const storyRef = doc(db, 'stories', storyId);
-  await deleteDoc(storyRef);
+  try {
+    await apiClient.delete(`/api/stories/${storyId}`);
+  } catch (err) {
+    console.error('Error deleting story:', err);
+    throw err;
+  }
 }
 
 export async function deleteExpiredStories() {
   try {
-    const storiesRef = collection(db, 'stories');
-    const now = Timestamp.now();
-
-    const q = query(
-      storiesRef,
-      where('expiresAt', '<', now)
-    );
-
-    const snap = await getDocs(q);
-    const batch = writeBatch(db);
-
-    snap.docs.forEach(d => {
-      batch.delete(d.ref);
-    });
-
-    await batch.commit();
+    await apiClient.post('/api/stories/cleanup');
   } catch (err) {
-    console.error('Error deleting expired stories:', err);
+    console.error('Error cleaning up expired stories:', err);
   }
 }

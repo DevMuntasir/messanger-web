@@ -1,15 +1,20 @@
 .stories-section {
-  background: var(--bg-secondary, #f5f5f5);
-  border-bottom: 1px solid var(--border-color, #e0e0e0);
+  background: #fff;
+  border-bottom: 1px solid #e0e0e0;
   padding: 12px 0;
   overflow-x: auto;
 }
 
 @media (prefers-color-scheme: dark) {
   .stories-section {
-    background: var(--bg-secondary, #1a1a1a);
-    border-bottom-color: var(--border-color, #333);
+    background: #1a1a1a;
+    border-bottom-color: #333;
   }
+}
+
+:root[data-theme="dark"] .stories-section {
+  background: #1a1a1a;
+  border-bottom-color: #333;
 }
 
 .stories-list {
@@ -44,6 +49,14 @@
   transform: scale(1.05);
 }
 
+.story-user-card.add-story-card {
+  opacity: 0.8;
+}
+
+.story-user-card.add-story-card:hover {
+  opacity: 1;
+}
+
 .story-avatar-wrapper {
   position: relative;
   width: 56px;
@@ -57,6 +70,35 @@
   border: 2px solid var(--primary-color, #0084ff);
   object-fit: cover;
   background: var(--bg-primary, #fff);
+}
+
+.add-story-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0084ff, #0073e6);
+  border: 2px dashed #0084ff;
+  color: white;
+  font-weight: bold;
+  font-size: 24px;
+  position: relative;
+}
+
+.add-story-avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.avatar-initials {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: bold;
 }
 
 .story-add-btn {
@@ -86,6 +128,14 @@
   transform: scale(0.95);
 }
 
+.add-story-btn {
+  width: 24px;
+  height: 24px;
+  font-size: 16px;
+  bottom: -4px;
+  right: -4px;
+}
+
 .story-unread-indicator {
   position: absolute;
   bottom: 2px;
@@ -99,7 +149,7 @@
 
 .story-username {
   font-size: 12px;
-  color: var(--text-secondary, #666);
+  color: #666;
   text-align: center;
   white-space: nowrap;
   overflow: hidden;
@@ -110,6 +160,10 @@
 
 @media (prefers-color-scheme: dark) {
   .story-username {
-    color: var(--text-secondary, #aaa);
+    color: #aaa;
   }
+}
+
+:root[data-theme="dark"] .story-username {
+  color: #aaa;
 }

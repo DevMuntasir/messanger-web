@@ -11,10 +11,15 @@ export function StoryProvider({ children }) {
   const [loading, setLoading] = useState(false);
 
   const loadMyStories = useCallback(async () => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      console.error('No user ID for loading stories');
+      return;
+    }
     setLoading(true);
     try {
+      console.log('Loading stories for user:', user.id);
       const stories = await getUserStories(user.id);
+      console.log('Stories loaded:', stories);
       setMyStories(stories);
     } catch (err) {
       console.error('Error loading my stories:', err);
@@ -40,10 +45,19 @@ export function StoryProvider({ children }) {
   }, []);
 
   const uploadStory = useCallback(async (imageUrl, caption) => {
-    if (!user?.id) return null;
+    if (!user?.id) {
+      console.error('No user ID for story upload');
+      return null;
+    }
     try {
+      console.log('Creating story with userId:', user.id);
       const story = await createStory(user.id, imageUrl, caption);
-      await loadMyStories();
+      console.log('Story created:', story);
+      // Reload stories after upload
+      setTimeout(() => {
+        console.log('Loading stories after upload...');
+        loadMyStories();
+      }, 500);
       return story;
     } catch (err) {
       console.error('Error uploading story:', err);

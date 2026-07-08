@@ -83,7 +83,19 @@ export default function InboxPage({ onSelectConversation }) {
 
       {/* Stories Section */}
       {activeTab === 'conversations' && (
-        <StoriesSection friendsList={conversations.map(c => ({ ...c.person, id: c.person?.id || c.id }))} />
+        <StoriesSection
+          friendsList={conversations
+            .filter(c => c.person) // Only conversations with valid person
+            .map(c => {
+              const person = c.person || {};
+              return {
+                ...person,
+                id: person.id || person._id || c.id,
+                userId: person.id || person._id || c.id,
+                name: person.name || 'Unknown',
+              };
+            })}
+        />
       )}
 
       {/* Tabs */}

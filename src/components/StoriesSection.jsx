@@ -15,7 +15,9 @@ export default function StoriesSection({ friendsList }) {
 
   React.useEffect(() => {
     if (friendsList && friendsList.length > 0) {
+      console.log('StoriesSection friendsList:', friendsList);
       const friendIds = friendsList.map(f => f.id || f.userId);
+      console.log('Friend IDs to fetch:', friendIds);
       loadFriendStories(friendIds);
     }
   }, [friendsList, loadFriendStories]);

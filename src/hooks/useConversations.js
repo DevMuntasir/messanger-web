@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import apiClient from '../services/apiClient';
 import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
+import { playIncomingMessageSound } from '../services/notificationService';
+import { formatLastSeen } from '../utils/timeFormat';
 
 export function useConversations() {
   const { user } = useAuth();
@@ -43,6 +45,9 @@ export function useConversations() {
     socket.on('connect', joinRooms);
 
     function onMessageReceived({ message, conversation }) {
+      const isMe = message.senderId === user?.id;
+      if (!isMe) playIncomingMessageSound();
+
       setConversations(prev =>
         prev.map(c => {
           if (String(c.id) !== String(conversation.id)) return c;
@@ -50,7 +55,6 @@ export function useConversations() {
             u => String(u.userId) === String(user?.id)
           );
           const newUnread = unreadEntry ? unreadEntry.count : c.unread;
-          const isMe = message.senderId === user?.id;
           const preview = buildPreview(message, isMe);
           return {
             ...c,
@@ -63,11 +67,15 @@ export function useConversations() {
       );
     }
 
-    function onPresenceUpdate({ userId, online }) {
+    function onPresenceUpdate({ userId, online, lastSeen }) {
       setConversations(prev =>
         prev.map(c => {
           if (c.person?.id !== userId) return c;
-          return { ...c, person: { ...c.person, online }, sub: online ? 'Active now' : 'Active recently' };
+          return {
+            ...c,
+            person: { ...c.person, online, lastSeen: lastSeen || c.person.lastSeen },
+            sub: online ? 'Active now' : formatLastSeen(lastSeen),
+          };
         })
       );
     }
@@ -89,6 +97,7 @@ export function useConversations() {
 function buildPreview(msg, isMe) {
   const prefix = isMe ? 'You: ' : '';
   if (msg.kind === 'image') return `${prefix}📷 Photo`;
+  if (msg.kind === 'video') return `${prefix}🎥 Video`;
   if (msg.kind === 'voice') return `${prefix}🎤 Voice message`;
   return `${prefix}${msg.text || ''}`;
 }

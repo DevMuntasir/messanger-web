@@ -1,0 +1,54 @@
+.bottom-nav {
+  display: flex;
+  align-items: stretch;
+  border-top: 1px solid var(--color-divider);
+  background: var(--color-surface);
+  padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px));
+  flex-shrink: 0;
+}
+
+.bn-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 5px 0;
+  color: var(--color-text3);
+  border-radius: 12px;
+}
+
+.bn-tab:hover {
+  background: var(--color-surface2);
+}
+
+.bn-tab.active {
+  color: var(--color-accent);
+}
+
+.bn-icon {
+  position: relative;
+  display: flex;
+}
+
+.bn-badge {
+  position: absolute;
+  top: -5px;
+  right: -9px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: #ff5d73;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bn-label {
+  font-size: 10.5px;
+  font-weight: 600;
+}

@@ -35,7 +35,7 @@
   min-width: 24px;
   height: 24px;
   padding: 0 6px;
-  background: linear-gradient(135deg, #b66bff 0%, #7c5cff 100%);
+  background: var(--accent-grad);
   color: white;
   border-radius: 12px;
   font-size: 12px;
@@ -66,7 +66,7 @@
 }
 
 .icon-btn.accent {
-  background: linear-gradient(135deg, #b66bff 0%, #7c5cff 100%);
+  background: var(--accent-grad);
 }
 
 /* Tabs */
@@ -112,7 +112,7 @@
   min-width: 20px;
   height: 20px;
   padding: 0 4px;
-  background: linear-gradient(135deg, #b66bff 0%, #7c5cff 100%);
+  background: var(--accent-grad);
   color: white;
   border-radius: 10px;
   font-size: 11px;
@@ -178,7 +178,7 @@
   width: 56px;
   height: 56px;
   border-radius: 28px;
-  background: linear-gradient(135deg, #b66bff 0%, #7c5cff 100%);
+  background: var(--accent-grad);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -199,7 +199,7 @@
   width: 21px;
   height: 21px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #b66bff 0%, #7c5cff 100%);
+  background: var(--accent-grad);
   border: 2.5px solid var(--color-bg);
   display: flex;
   align-items: center;
@@ -331,7 +331,7 @@
   min-width: 19px;
   height: 19px;
   padding: 0 6px;
-  background: linear-gradient(135deg, #b66bff 0%, #7c5cff 100%);
+  background: var(--accent-grad);
   color: white;
   border-radius: 9px;
   font-size: 11px;
@@ -413,4 +413,52 @@
   .contact-row {
     padding: 10px 12px;
   }
+}
+
+/* Message tone picker */
+.tone-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 8, 14, 0.4);
+  z-index: 1500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tone-modal {
+  min-width: 280px;
+  background: var(--color-elev);
+  border: 1px solid var(--color-divider);
+  border-radius: 18px;
+  padding: 8px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.tone-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 8px 12px 10px;
+}
+
+.tone-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 14px;
+  background: transparent;
+  border: none;
+  border-radius: 12px;
+  color: var(--color-text);
+  font-size: 15px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.tone-row:hover {
+  background: var(--color-surface2);
 }

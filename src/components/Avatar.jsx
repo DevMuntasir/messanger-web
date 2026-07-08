@@ -1,16 +1,17 @@
 import React from 'react';
 import './Avatar.css';
 
-export default function Avatar({ person, size = 54, fontSize = 16, online = false, ring = false }) {
-  const colors = {
-    A: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    B: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-    C: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-    D: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-    E: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-  };
+// Same avatar gradient palette as the app (AV_GRADS in the app's mock data).
+export const AV_GRADS = {
+  A: ['#FF8A65', '#FF5277'], B: ['#5C6BFF', '#23B5FF'], C: ['#21C463', '#0EA5A5'],
+  D: ['#FFB300', '#FF6F43'], E: ['#B66BFF', '#7C5CFF'], F: ['#FF5FA2', '#FF8C42'],
+  G: ['#2DD4BF', '#3B82F6'], H: ['#F472B6', '#A855F7'], I: ['#60A5FA', '#6366F1'],
+  J: ['#34D399', '#10B981'], K: ['#FB7185', '#E11D48'], L: ['#22D3EE', '#0891B2'],
+};
 
-  const gradient = colors[person?.g] || colors.A;
+export default function Avatar({ person, size = 54, fontSize = 16, online = false, ring = false }) {
+  const grad = AV_GRADS[person?.g] || AV_GRADS.A;
+  const gradient = `linear-gradient(135deg, ${grad[0]} 0%, ${grad[1]} 100%)`;
 
   return (
     <div className="avatar-container" style={{ position: 'relative', width: size, height: size }}>

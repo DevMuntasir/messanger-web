@@ -137,7 +137,7 @@
 
 .setup-button {
   padding: 16px 20px;
-  background: linear-gradient(135deg, #b66bff 0%, #7c5cff 100%);
+  background: var(--accent-grad);
   border: none;
   border-radius: 10px;
   color: white;

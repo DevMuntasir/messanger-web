@@ -8,6 +8,11 @@
   --color-text3: #6e717a;
   --color-divider: #2a2d36;
   --color-online: #3ecc71;
+
+  /* Accent (Settings → Theme & color). JS overrides these per selection. */
+  --accent-a: #9b5cff;
+  --accent-b: #0a7cff;
+  --accent-grad: linear-gradient(135deg, var(--accent-a) 0%, var(--accent-b) 100%);
   --color-accent: #9b5cff;
   --color-accent-light: #b66bff;
   --color-accent-dark: #7c5cff;
@@ -17,6 +22,19 @@
   --font-semibold: 600;
   --font-bold: 700;
   --font-extrabold: 800;
+}
+
+/* Light theme — same tokens as the app's lightTheme in theme.js */
+:root[data-theme='light'] {
+  --color-bg: #ffffff;
+  --color-surface: #ffffff;
+  --color-surface2: #f3f4f9;
+  --color-elev: #ffffff;
+  --color-text: #14161f;
+  --color-text2: #6a7080;
+  --color-text3: #9aa0b0;
+  --color-divider: #edeef4;
+  --color-online: #21c463;
 }
 
 * {

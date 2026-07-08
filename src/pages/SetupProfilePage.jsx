@@ -1,21 +1,11 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import apiClient from '../services/apiClient';
+import { registerProfile, updateMe } from '../services/authService';
 import Icon from '../components/Icon';
-import Avatar from '../components/Avatar';
+import Avatar, { AV_GRADS } from '../components/Avatar';
 import './SetupProfilePage.css';
 
-const GRADIENT_KEYS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
-const GRADIENTS = {
-  A: ['#667eea', '#764ba2'],
-  B: ['#f093fb', '#f5576c'],
-  C: ['#4facfe', '#00f2fe'],
-  D: ['#43e97b', '#38f9d7'],
-  E: ['#fa709a', '#fee140'],
-  F: ['#30cfd0', '#330867'],
-  G: ['#a8edea', '#fed6e3'],
-  H: ['#ff9a56', '#ff6a88'],
-};
+const GRADIENT_KEYS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
 
 export default function SetupProfilePage() {
   const { user, refreshUser } = useAuth();
@@ -38,14 +28,20 @@ export default function SetupProfilePage() {
     setLoading(true);
     setError('');
     try {
-      await apiClient.patch('/api/me', {
+      const payload = {
         name: name.trim(),
         handle: handle.toLowerCase().trim().replace('@', ''),
         g,
-      });
+      };
+      // No backend user yet → register; user exists but incomplete → update.
+      if (user) {
+        await updateMe(payload);
+      } else {
+        await registerProfile(payload.name, payload.handle, payload.g);
+      }
       await refreshUser();
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to save profile');
+      setError(err.response?.data?.error || err.userMessage || 'Failed to save profile');
     } finally {
       setLoading(false);
     }
@@ -68,7 +64,7 @@ export default function SetupProfilePage() {
                 key={key}
                 className={`color-circle ${g === key ? 'selected' : ''}`}
                 style={{
-                  background: `linear-gradient(135deg, ${GRADIENTS[key][0]} 0%, ${GRADIENTS[key][1]} 100%)`,
+                  background: `linear-gradient(135deg, ${AV_GRADS[key][0]} 0%, ${AV_GRADS[key][1]} 100%)`,
                 }}
                 onClick={() => setG(key)}
               >

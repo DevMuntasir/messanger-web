@@ -35,6 +35,20 @@
   overflow: hidden;
 }
 
+/* active bottom-nav tab content */
+.tab-content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.tab-content > * {
+  flex: 1;
+  min-height: 0;
+}
+
 .chat-panel {
   flex: 1;
   display: flex;
@@ -66,9 +80,8 @@
   .inbox-panel {
     width: 100%;
     border-right: none;
-    border-bottom: 1px solid var(--color-divider);
-    height: auto;
-    min-height: 100px;
+    flex: 1;
+    min-height: 0;
   }
 
   .inbox-panel.hidden-mobile {
@@ -89,12 +102,3 @@
   }
 }
 
-@media (max-width: 480px) {
-  .inbox-panel {
-    max-height: 40vh;
-  }
-
-  .chat-panel {
-    flex: 1;
-  }
-}

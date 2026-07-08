@@ -2,6 +2,7 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+  width: fit-content;
   max-width: 280px;
   margin-bottom: 3px;
   position: relative;
@@ -17,7 +18,7 @@
 
 .bubble-mine {
   align-items: flex-end;
-  background: linear-gradient(135deg, #b66bff 0%, #7c5cff 100%);
+  background: var(--accent-grad);
   border-radius: 18px 18px 4px 18px;
   padding: 10px 12px;
 }
@@ -43,6 +44,15 @@
   height: 160px;
   border-radius: 12px;
   object-fit: cover;
+  cursor: pointer;
+}
+
+.bubble-video {
+  width: 218px;
+  height: 218px;
+  border-radius: 12px;
+  object-fit: cover;
+  background: rgba(0, 0, 0, 0.25);
 }
 
 .bubble-gif {
@@ -62,4 +72,34 @@
 .bubble-pending {
   margin-left: 6px;
   opacity: 0.6;
+}
+
+.bubble-context-menu {
+  background: var(--color-elev);
+  border: 1px solid var(--color-divider);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.context-item {
+  padding: 10px 16px;
+  background: transparent;
+  border: none;
+  color: var(--color-text);
+  font-size: 14px;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: background 0.2s ease;
+}
+
+.context-item:hover {
+  background: var(--color-surface2);
+}
+
+.context-item:first-child {
+  border-bottom: 1px solid var(--color-divider);
 }

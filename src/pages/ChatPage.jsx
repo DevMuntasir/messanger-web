@@ -9,6 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import { useMessages } from '../hooks/useMessages';
 import apiClient from '../services/apiClient';
+import { formatMessageTime, formatLastSeen } from '../utils/timeFormat';
 import './ChatPage.css';
 
 const REACTIONS = ['👍', '❤️', '😂', '😢', '😍', '🔥', '👌', '🎉'];
@@ -27,6 +28,7 @@ export default function ChatPage({ convId, onBack }) {
   const [panel, setPanel] = useState(null);        // null | 'emoji' | 'gif' | 'attach'
   const [quickOpen, setQuickOpen] = useState(true); // left quick-action icons expanded
   const [replyTo, setReplyTo] = useState(null);    // message being replied to
+  const [viewerUri, setViewerUri] = useState(null); // fullscreen image viewer
 
   const scrollRef = useRef(null);
   const typingTimer = useRef(null);
@@ -57,12 +59,25 @@ export default function ChatPage({ convId, onBack }) {
       if (seenBy !== user?.id) setSeen(true);
     }
 
+    // Keep the header's online / last-seen state live while the chat is open.
+    function onPresenceUpdate({ userId, online, lastSeen }) {
+      setConversation(prev => {
+        if (!prev || prev.person?.id !== userId) return prev;
+        return {
+          ...prev,
+          person: { ...prev.person, online, lastSeen: lastSeen || prev.person.lastSeen },
+        };
+      });
+    }
+
     socket.on('typing', onTyping);
     socket.on('messages_seen', onMessagesSeen);
+    socket.on('presence_update', onPresenceUpdate);
 
     return () => {
       socket.off('typing', onTyping);
       socket.off('messages_seen', onMessagesSeen);
+      socket.off('presence_update', onPresenceUpdate);
     };
   }, [socket, user?.id]);
 
@@ -78,9 +93,6 @@ export default function ChatPage({ convId, onBack }) {
 
   const handleTextChange = (val) => {
     setText(val);
-    // Messenger collapses the quick actions to a chevron while typing.
-    if (val && quickOpen) setQuickOpen(false);
-    if (!val && !quickOpen) setQuickOpen(true);
     if (!socket || !convId) return;
     socket.emit('typing_start', { conversationId: convId });
     clearTimeout(typingTimer.current);
@@ -117,17 +129,20 @@ export default function ChatPage({ convId, onBack }) {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file || !socket) return;
+    const isVideo = (file.type || '').startsWith('video/');
+    const kind = isVideo ? 'video' : 'image';
     setUploading(true);
     try {
       const formData = new FormData();
       formData.append('file', file);
       const res = await apiClient.post('/api/upload/image', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: isVideo ? 60000 : 15000,
       });
       const url = res.data.url;
       const optimisticId = `opt_${Date.now()}`;
-      appendOptimistic({ id: optimisticId, from: 'me', kind: 'image', uri: url, time: 'now', pending: true });
-      socket.emit('send_message', { conversationId: convId, kind: 'image', imageUrl: url });
+      appendOptimistic({ id: optimisticId, from: 'me', kind, uri: url, time: 'now', pending: true });
+      socket.emit('send_message', { conversationId: convId, kind, imageUrl: url });
       scrollToBottom();
     } catch (err) {
       alert('Upload failed: ' + err.message);
@@ -201,7 +216,7 @@ export default function ChatPage({ convId, onBack }) {
           <div>
             <p className="chat-name">{p.name}</p>
             <p className="chat-sub">
-              {typing ? 'typing…' : (p.online ? 'Active now' : (conversation?.sub || 'Active recently'))}
+              {typing ? 'typing…' : (p.online ? 'Active now' : formatLastSeen(p.lastSeen))}
             </p>
           </div>
         </div>
@@ -226,10 +241,12 @@ export default function ChatPage({ convId, onBack }) {
             curPerson={p}
             onReact={openReact}
             onReply={handleReply}
+            onImagePress={setViewerUri}
+            allMsgs={msgs}
           />
         ))}
         {typing && (
-          <div className="msg-row msg-in">
+          <div className="msg-row msg-in typing-row">
             <Avatar person={p} size={26} />
             <TypingDots />
           </div>
@@ -259,15 +276,18 @@ export default function ChatPage({ convId, onBack }) {
                 Replying to {replyTo.from === 'me' ? 'yourself' : replyTo.who?.name || 'them'}
               </div>
               <div className="quote-text">
-                {replyTo.kind === 'text' ? replyTo.text : replyTo.kind === 'image' ? '📷 Image' : '🎙️ Voice'}
+                {replyTo.kind === 'text' ? replyTo.text
+                  : replyTo.kind === 'image' ? '📷 Image'
+                  : replyTo.kind === 'video' ? '🎥 Video'
+                  : '🎙️ Voice'}
               </div>
             </div>
           </div>
         )}
         <div className="composer-content">
           {/* hidden file inputs */}
-          <input ref={fileRef} type="file" accept="image/*" hidden onChange={handleFileChange} />
-          <input ref={cameraRef} type="file" accept="image/*" capture="environment" hidden onChange={handleFileChange} />
+          <input ref={fileRef} type="file" accept="image/*,video/*" hidden onChange={handleFileChange} />
+          <input ref={cameraRef} type="file" accept="image/*,video/*" capture="environment" hidden onChange={handleFileChange} />
 
           {quickOpen ? (
           <>
@@ -287,7 +307,8 @@ export default function ChatPage({ convId, onBack }) {
             </button>
           </>
         ) : (
-          <button className="composer-btn" title="More actions" onClick={() => setQuickOpen(true)}>
+          <button className="composer-btn" title="More actions"
+            onClick={() => { setQuickOpen(true); inputRef.current?.blur(); }}>
             <Icon name="chevron" size={24} />
           </button>
         )}
@@ -298,6 +319,10 @@ export default function ChatPage({ convId, onBack }) {
             value={text}
             onChange={(e) => handleTextChange(e.target.value)}
             onKeyDown={handleKeyDown}
+            onFocus={() => {
+              if (panel) setPanel(null);
+              if (quickOpen) setQuickOpen(false);
+            }}
             placeholder="Message…"
             className="comp-input"
             rows="1"
@@ -349,6 +374,14 @@ export default function ChatPage({ convId, onBack }) {
         )}
       </div>
 
+      {/* fullscreen image viewer */}
+      {viewerUri && (
+        <div className="viewer-overlay" onClick={() => setViewerUri(null)}>
+          <button className="viewer-close" onClick={() => setViewerUri(null)}>✕</button>
+          <img src={viewerUri} alt="" className="viewer-image" onClick={(e) => e.stopPropagation()} />
+        </div>
+      )}
+
       {/* Reaction Picker */}
       {reactAnchor && (
         <ReactionPicker
@@ -363,38 +396,151 @@ export default function ChatPage({ convId, onBack }) {
   );
 }
 
-function MsgRow({ m, prev, next, curPerson, onReact, onReply }) {
+const SWIPE_TRIGGER = 56;   // px of horizontal drag that arms the reply
+const SWIPE_MAX = 84;       // bubble travel is clamped here
+
+function MsgRow({ m, prev, next, curPerson, onReact, onReply, onImagePress, allMsgs }) {
+  const { user } = useAuth();
+  const [showTime, setShowTime] = useState(false);
   const mine = m.from === 'me';
+  const timeLabel = formatMessageTime(m);
   const cont = prev && prev.from === m.from && (m.who?.id === prev.who?.id);
   const groupStart = !prev || prev.from !== m.from || (m.who?.id !== prev.who?.id);
   const showAvatar = !mine && (!next || next.from !== m.from || next.who?.id !== m.who?.id);
+
+  // Quoted message: prefer the loaded copy, fall back to the server snapshot
+  // (replyPreview) when the original is outside the loaded window.
+  const replyMsg = m.replyTo
+    ? (allMsgs?.find(msg => msg.id === m.replyTo)
+      || (m.replyPreview ? {
+        kind: m.replyPreview.kind,
+        text: m.replyPreview.text,
+        from: m.replyPreview.senderId === user?.id ? 'me' : 'them',
+        who: curPerson,
+      } : null))
+    : null;
 
   const handleReply = () => {
     onReply?.(m);
   };
 
-  return (
-    <div className={`msg-row ${mine ? 'msg-out' : 'msg-in'} ${groupStart ? 'group-start' : ''}`}>
-      {!mine && (
-        <div style={{ width: 26 }}>
-          {showAvatar && <Avatar person={m.who || curPerson} size={26} />}
+  // Swipe-to-reply (Messenger style, touch devices): drag the bubble toward
+  // the center, a reply arrow fades in behind it; passing the threshold arms
+  // the reply.
+  const dir = mine ? -1 : 1; // outgoing swipes left, incoming swipes right
+  const [swipeX, setSwipeX] = useState(0);
+  const touchRef = useRef({ startX: 0, startY: 0, engaged: false, crossed: false, dist: 0 });
+
+  const onTouchStart = (e) => {
+    const t = e.touches[0];
+    touchRef.current = { startX: t.clientX, startY: t.clientY, engaged: false, crossed: false, dist: 0 };
+  };
+
+  const onTouchMove = (e) => {
+    const t = e.touches[0];
+    const s = touchRef.current;
+    const dx = t.clientX - s.startX;
+    const dy = t.clientY - s.startY;
+    if (!s.engaged) {
+      if (dx * dir > 14 && Math.abs(dx) > Math.abs(dy) * 1.6) s.engaged = true;
+      else return;
+    }
+    const dist = Math.min(Math.max(dx * dir, 0), SWIPE_MAX);
+    s.dist = dist;
+    setSwipeX(dist * dir);
+    if (dist > SWIPE_TRIGGER && !s.crossed) {
+      s.crossed = true;
+      try { navigator.vibrate?.(8); } catch {}
+    } else if (dist <= SWIPE_TRIGGER) {
+      s.crossed = false;
+    }
+  };
+
+  const onTouchEnd = () => {
+    if (touchRef.current.dist > SWIPE_TRIGGER) handleReply();
+    touchRef.current.engaged = false;
+    setSwipeX(0); // CSS transition springs the bubble back
+  };
+
+  const swipeProgress = Math.min(Math.abs(swipeX) / SWIPE_TRIGGER, 1);
+
+  // Messenger-style reply: "You replied to X" label, then a dimmed quote pill
+  // that the actual bubble overlaps from below.
+  let replyEl = null;
+  if (replyMsg) {
+    const replierName = mine ? 'You' : (m.who?.name?.split(' ')[0] || curPerson?.name?.split(' ')[0] || 'They');
+    const targetName = replyMsg.from === 'me'
+      ? (mine ? 'yourself' : 'you')
+      : (replyMsg.who?.name?.split(' ')[0] || 'them');
+    const quoteText = replyMsg.kind === 'text' ? replyMsg.text
+      : replyMsg.kind === 'image' ? '📷 Photo'
+      : replyMsg.kind === 'video' ? '🎥 Video'
+      : replyMsg.kind === 'voice' ? '🎙️ Voice message'
+      : 'Message';
+    replyEl = (
+      <>
+        <div className="reply-label-row">
+          <span className="reply-arrow">↩</span>
+          <span className="reply-label">{replierName} replied to {targetName}</span>
         </div>
-      )}
-      <div style={{ position: 'relative' }}>
-        <Bubble
-          m={m}
-          cont={cont}
-          onLongPress={(e) => onReact(m.id, e.nativeEvent)}
-          onReply={handleReply}
-        />
-        {m.react && (
-          <div className={`react-chip ${mine ? 'react-mine' : 'react-theirs'}`}>
-            {m.react}
+        <div className="reply-pill">{quoteText}</div>
+      </>
+    );
+  }
+
+  return (
+    <div
+      className={`msg-row ${mine ? 'msg-out' : 'msg-in'} ${groupStart ? 'group-start' : ''}`}
+      style={{ position: 'relative' }}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+      onTouchCancel={onTouchEnd}
+    >
+      {showTime && timeLabel ? (
+        <span className="time-label">{timeLabel}</span>
+      ) : null}
+      <div
+        className="swipe-icon-wrap"
+        style={{
+          [mine ? 'right' : 'left']: mine ? 2 : 34,
+          opacity: swipeProgress,
+          transform: `scale(${0.4 + swipeProgress * 0.6})`,
+        }}
+      >
+        <div className="swipe-icon">↩</div>
+      </div>
+      <div
+        className="swipe-track"
+        style={{
+          transform: `translateX(${swipeX}px)`,
+          transition: swipeX === 0 ? 'transform 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.2)' : 'none',
+        }}
+      >
+        {!mine && (
+          <div style={{ width: 26 }}>
+            {showAvatar && <Avatar person={m.who || curPerson} size={26} />}
           </div>
         )}
-        {m.pending && mine && (
-          <div className="msg-status">Sending…</div>
-        )}
+        <div style={{ position: 'relative' }} className={mine ? 'msg-col-out' : 'msg-col-in'}>
+          {replyEl}
+          <Bubble
+            m={m}
+            cont={cont}
+            onLongPress={(e) => onReact(m.id, e.nativeEvent)}
+            onPress={() => setShowTime(s => !s)}
+            onReply={handleReply}
+            onImagePress={onImagePress}
+          />
+          {m.react && (
+            <div className={`react-chip ${mine ? 'react-mine' : 'react-theirs'}`}>
+              {m.react}
+            </div>
+          )}
+          {m.pending && mine && (
+            <div className="msg-status">Sending…</div>
+          )}
+        </div>
       </div>
     </div>
   );

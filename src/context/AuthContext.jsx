@@ -1,13 +1,13 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import '../config/firebase';
-import apiClient from '../services/apiClient';
+import { fetchMe, updateMe } from '../services/authService';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [firebaseUser, setFirebaseUser] = useState(undefined);
-  const [user, setUser] = useState(null);
+  const [firebaseUser, setFirebaseUser] = useState(undefined); // undefined = loading
+  const [user, setUser] = useState(null); // MongoDB user
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -16,22 +16,10 @@ export function AuthProvider({ children }) {
       setFirebaseUser(fbUser);
       if (fbUser) {
         try {
-          const res = await apiClient.get('/api/me');
-          setUser(res.data);
-        } catch (err) {
-          // User doesn't exist in backend yet, try to create them
-          try {
-            const newUser = await apiClient.post('/api/me', {
-              email: fbUser.email,
-              name: fbUser.displayName || 'User',
-              photoURL: fbUser.photoURL,
-            });
-            setUser(newUser.data);
-          } catch {
-            // If both fail, still keep firebaseUser so socket can try
-            console.warn('Could not fetch or create user profile');
-            setUser(null);
-          }
+          const mongoUser = await fetchMe();
+          setUser(mongoUser);
+        } catch {
+          setUser(null);
         }
       } else {
         setUser(null);
@@ -43,18 +31,18 @@ export function AuthProvider({ children }) {
 
   const refreshUser = useCallback(async () => {
     try {
-      const res = await apiClient.get('/api/me');
-      setUser(res.data);
-      return res.data;
+      const mongoUser = await fetchMe();
+      setUser(mongoUser);
+      return mongoUser;
     } catch {
       return null;
     }
   }, []);
 
   const patchUser = useCallback(async (data) => {
-    const res = await apiClient.patch('/api/me', data);
-    setUser(res.data);
-    return res.data;
+    const updated = await updateMe(data);
+    setUser(updated);
+    return updated;
   }, []);
 
   return (

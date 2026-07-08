@@ -19,4 +19,12 @@ apiClient.interceptors.request.use(async (config) => {
   return config;
 });
 
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => Promise.reject({
+    ...error,
+    userMessage: error.response?.data?.error || error.message || 'An API error occurred',
+  })
+);
+
 export default apiClient;
